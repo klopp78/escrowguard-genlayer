@@ -4,7 +4,7 @@ import { TransactionStatus } from "genlayer-js/types";
 
 export const ESCROW_GUARD_CONTRACT_ADDRESS =
   (process.env.NEXT_PUBLIC_ESCROW_GUARD_CONTRACT_ADDRESS ??
-    "0x0000000000000000000000000000000000000000") as `0x${string}`;
+    "0x188f137929Acc43b9bec63E4C958C52b4eeE26Aa") as `0x${string}`;
 
 export type WalletAddress = `0x${string}`;
 
