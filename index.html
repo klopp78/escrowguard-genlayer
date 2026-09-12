@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ReleaseProof for GenLayer</title>
+    <meta
+      name="description"
+      content="Consensus-backed software release provenance for GenLayer."
+    />
+    <style>
+      :root {
+        color: #15171a;
+        background: #f5f7fb;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        min-height: 100vh;
+      }
+
+      .hero {
+        background: #fff;
+        border-bottom: 1px solid #d8dde8;
+      }
+
+      .wrap {
+        margin: 0 auto;
+        max-width: 1120px;
+        padding: 36px 20px;
+      }
+
+      h1 {
+        font-size: clamp(42px, 7vw, 74px);
+        letter-spacing: 0;
+        line-height: 0.96;
+        margin: 0;
+        max-width: 850px;
+      }
+
+      p {
+        color: #52616d;
+        font-size: 18px;
+        line-height: 1.7;
+        max-width: 760px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-top: 28px;
+      }
+
+      .tile {
+        background: #fff;
+        border: 1px solid #d7dee9;
+        border-radius: 8px;
+        min-height: 128px;
+        padding: 20px;
+      }
+
+      .tile span {
+        color: #60707b;
+        display: block;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .tile strong {
+        display: block;
+        font-size: 22px;
+        margin-top: 18px;
+      }
+
+      .map {
+        background:
+          linear-gradient(90deg, rgba(31, 157, 115, 0.14) 1px, transparent 1px),
+          linear-gradient(rgba(42, 57, 78, 0.12) 1px, transparent 1px),
+          #10151d;
+        background-size: 48px 48px;
+        border-radius: 8px;
+        color: #fff;
+        margin-top: 26px;
+        padding: 24px;
+      }
+
+      .map code {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        display: block;
+        margin-top: 10px;
+        overflow-wrap: anywhere;
+        padding: 14px;
+      }
+
+      a {
+        color: #12684d;
+        font-weight: 800;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <h1>ReleaseProof for GenLayer</h1>
+          <p>
+            A project for verifying software release provenance across GitHub,
+            package registries, and changelogs before agents depend on a
+            package.
+          </p>
+          <p>
+            Repository:
+            <a href="https://github.com/klopp78/releaseproof-genlayer"
+              >github.com/klopp78/releaseproof-genlayer</a
+            >
+          </p>
+        </div>
+      </section>
+      <section class="wrap">
+        <div class="grid">
+          <div class="tile">
+            <span>Trust problem</span>
+            <strong>Release provenance</strong>
+          </div>
+          <div class="tile">
+            <span>Sources</span>
+            <strong>GitHub, registry, changelog</strong>
+          </div>
+          <div class="tile">
+            <span>On-chain record</span>
+            <strong>Compact hashes and verdict</strong>
+          </div>
+        </div>
+        <div class="map">
+          <strong>Consensus output</strong>
+          <code>
+            verified / mismatch / incomplete / risky, with evidence hashes,
+            source provenance, and a durable release_id.
+          </code>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

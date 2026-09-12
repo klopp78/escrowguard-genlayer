@@ -1,0 +1,10 @@
+node_modules/
+.vinext/
+.wrangler/
+dist/
+.next/
+out/
+contracts/__pycache__/
+*.pyc
+.env
+.env.*
