@@ -60,8 +60,9 @@ export default function ReleasePage() {
       <a className="pill" href="/">EscrowGuard</a>
       <h1 className="mt-7 text-4xl font-semibold">Review milestone release</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
-        Submit deliverable evidence and test results. The contract stores an
-        approved or blocked release receipt tied to fetched source hashes.
+        A payer or payee can submit deliverable evidence and test results. The
+        contract stores an approved or blocked release receipt tied to fetched
+        source hashes and the original terms.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="escrow" label="Escrow ID" value={escrowId} setValue={setEscrowId} />

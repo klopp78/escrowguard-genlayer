@@ -62,15 +62,15 @@ export default function EscrowPage() {
       <a className="pill" href="/">EscrowGuard</a>
       <h1 className="mt-7 text-4xl font-semibold">Create escrow baseline</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
-        Register the budget boundary and source commitments before any milestone
-        release can be reviewed.
+        Register the funded budget boundary and source commitments before any
+        milestone release can be reviewed.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="title" label="Project title" value={projectTitle} setValue={setProjectTitle} />
         <Field id="payee" label="Payee wallet" value={payeeWallet} setValue={setPayeeWallet} />
         <div className="grid gap-4 md:grid-cols-2">
           <Field id="currency" label="Currency label" value={currency} setValue={setCurrency} />
-          <Field id="budget" label="Total budget" value={totalBudget} setValue={setTotalBudget} />
+          <Field id="budget" label="Deposited budget" value={totalBudget} setValue={setTotalBudget} />
         </div>
         <Field id="terms" label="Milestone terms URL" value={termsUrl} setValue={setTermsUrl} />
         <Field id="repo" label="Work repository URL" value={repoUrl} setValue={setRepoUrl} />

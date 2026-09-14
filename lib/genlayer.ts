@@ -80,6 +80,17 @@ export async function readExecution(releaseId: string, options: ChainReadOptions
   });
 }
 
+export async function readPayeeClaim(payeeWallet: string, currency: string, options: ChainReadOptions = {}) {
+  const client = createEscrowGuardClient(options.walletAddress);
+  return client.readContract({
+    address: escrowGuardAddress(options.contractAddress),
+    functionName: "get_payee_claim",
+    args: [payeeWallet, currency],
+    jsonSafeReturn: true,
+    leaderOnly: true,
+  });
+}
+
 export async function createEscrow({
   walletAddress,
   projectTitle,

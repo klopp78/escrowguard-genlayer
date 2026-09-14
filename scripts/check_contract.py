@@ -93,6 +93,7 @@ def main():
         "get_escrow": "view",
         "get_release": "view",
         "get_execution": "view",
+        "get_payee_claim": "view",
         "list_escrow_ids": "view",
         "list_release_ids": "view",
     }
@@ -133,6 +134,16 @@ def main():
         raise SystemExit("execution receipt guard missing")
     if "execution_exceeds_spending_boundary" not in source:
         raise SystemExit("spending boundary guard missing")
+    if "funded_value" not in source or "deposited_value" not in source:
+        raise SystemExit("funded deposited value tracking missing")
+    if "only_payer_or_payee_can_request_release_review" not in source:
+        raise SystemExit("payee-requested review guard missing")
+    if "only_payer_can_execute_release" in source:
+        raise SystemExit("execution must not require payer cooperation after approval")
+    if "contract_state_credit_to_payee" not in source:
+        raise SystemExit("payee transfer ledger missing")
+    if "milestone_terms_snapshot" not in source or "acceptance_policy_snapshot" not in source:
+        raise SystemExit("baseline terms and policy must be passed into adjudication")
 
     print("EscrowGuard Python contract check passed")
 

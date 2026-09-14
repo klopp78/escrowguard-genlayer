@@ -30,7 +30,10 @@ class StudioFlowSimulator {
         payee,
         currency,
         total_budget: 1000,
+        funded_value: 1000,
+        deposited_value: 1000,
         remaining_budget: 1000,
+        released_value: 0,
         baseline: { baseline_hash: "baselinehash" },
         release_ids: [],
       });
@@ -53,6 +56,8 @@ class StudioFlowSimulator {
         execution_ready: true,
         authorized_amount: 250,
         evidence_bundle_hash: "a".repeat(64),
+        adjudication_context_hash: "b".repeat(64),
+        requester: payeeAddress,
       });
       escrow.release_ids.push(releaseId);
       return "0xrequestrelease";
@@ -66,6 +71,7 @@ class StudioFlowSimulator {
       const escrow = this.escrows.get(escrowId);
       assert.ok(escrow.remaining_budget >= release.authorized_amount);
       escrow.remaining_budget -= release.authorized_amount;
+      escrow.released_value += release.authorized_amount;
       release.state = "executed";
       release.execution_ready = false;
       this.executions.set(releaseId, {
@@ -73,8 +79,17 @@ class StudioFlowSimulator {
         escrow_id: escrowId,
         executed_amount: 250,
         remaining_budget: 750,
+        released_value: 250,
+        payee_claimable_amount: 250,
+        transfer_mechanism: "contract_state_credit_to_payee",
         status: "executed",
       });
+      this.payeeClaim = {
+        payee: payeeAddress,
+        currency: "GEN",
+        claimable_amount: 250,
+        release_ids: [releaseId],
+      };
       return "0xexecuterelease";
     }
     throw new Error(`Unexpected write ${functionName}`);
@@ -93,6 +108,7 @@ class StudioFlowSimulator {
     if (functionName === "get_escrow") return JSON.stringify(this.escrows.get(args[0]) ?? {});
     if (functionName === "get_release") return JSON.stringify(this.releases.get(args[0]) ?? {});
     if (functionName === "get_execution") return JSON.stringify(this.executions.get(args[0]) ?? {});
+    if (functionName === "get_payee_claim") return JSON.stringify(this.payeeClaim ?? {});
     throw new Error(`Unexpected read ${functionName}`);
   }
 }
@@ -125,6 +141,7 @@ async function runFullFlow(client) {
     args: [returnedEscrowId],
   }));
   assert.equal(escrow.remaining_budget, 1000);
+  assert.equal(escrow.deposited_value, 1000);
 
   const releaseHash = await client.writeContract({
     functionName: "request_release",
@@ -145,6 +162,7 @@ async function runFullFlow(client) {
   }));
   assert.equal(release.state, "approved");
   assert.equal(release.execution_ready, true);
+  assert.equal(release.requester, payeeAddress);
 
   const executionHash = await client.writeContract({
     functionName: "execute_release",
@@ -157,6 +175,12 @@ async function runFullFlow(client) {
   }));
   assert.equal(execution.status, "executed");
   assert.equal(execution.remaining_budget, 750);
+  assert.equal(execution.transfer_mechanism, "contract_state_credit_to_payee");
+  const claim = JSON.parse(await client.readContract({
+    functionName: "get_payee_claim",
+    args: [payeeAddress, "GEN"],
+  }));
+  assert.equal(claim.claimable_amount, 250);
   return { returnedEscrowId, returnedReleaseId };
 }
 
@@ -174,6 +198,7 @@ assert.deepEqual(
     "write:execute_release",
     "receipt:0xexecuterelease",
     "read:get_execution",
+    "read:get_payee_claim",
   ],
 );
 assert.equal(outcome.returnedEscrowId, escrowId);

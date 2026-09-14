@@ -9,9 +9,10 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run build",
+    "test": "npm run contract:check && npm run contract:test && npm run flow:check && npm run build",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "contract:check": "node scripts/check-contract.mjs",
+    "contract:test": "node scripts/test-contract-lifecycle.mjs",
     "flow:check": "node scripts/check-full-flow.mjs",
     "db:generate": "drizzle-kit generate"
   },

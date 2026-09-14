@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ESCROW_GUARD_CONTRACT_ADDRESS, executeRelease, readEscrow, readExecution, readRelease, type WalletAddress } from "@/lib/genlayer";
+import { ESCROW_GUARD_CONTRACT_ADDRESS, executeRelease, readEscrow, readExecution, readPayeeClaim, readRelease, type WalletAddress } from "@/lib/genlayer";
 
 declare global {
   interface Window {
@@ -12,6 +12,8 @@ declare global {
 export default function RecordsPage() {
   const [escrowId, setEscrowId] = useState("");
   const [releaseId, setReleaseId] = useState("");
+  const [payeeWallet, setPayeeWallet] = useState("0x2222222222222222222222222222222222222222");
+  const [currency, setCurrency] = useState("GEN");
   const [address, setAddress] = useState(ESCROW_GUARD_CONTRACT_ADDRESS);
   const [wallet, setWallet] = useState<WalletAddress | null>(null);
   const [message, setMessage] = useState("Read an escrow, release, or execution receipt from the deployed contract.");
@@ -26,7 +28,7 @@ export default function RecordsPage() {
     return accounts[0];
   }
 
-  async function read(kind: "escrow" | "release" | "execution") {
+  async function read(kind: "escrow" | "release" | "execution" | "payee claim") {
     try {
       setBusy(true);
       const options = { walletAddress: wallet ?? undefined, contractAddress: address as `0x${string}` };
@@ -35,7 +37,9 @@ export default function RecordsPage() {
           ? await readEscrow(escrowId, options)
           : kind === "release"
             ? await readRelease(releaseId, options)
-            : await readExecution(releaseId, options);
+            : kind === "execution"
+              ? await readExecution(releaseId, options)
+              : await readPayeeClaim(payeeWallet, currency, options);
       setRecord(typeof value === "string" ? value : JSON.stringify(value, null, 2));
       setMessage(`${kind} record loaded.`);
     } catch (error) {
@@ -65,18 +69,24 @@ export default function RecordsPage() {
       <a className="pill" href="/">EscrowGuard</a>
       <h1 className="mt-7 text-4xl font-semibold">Inspect and execute receipts</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
-        Read the exact on-chain records or execute an approved release receipt.
-        Execution refuses blocked reviews, repeats, and over-budget payouts.
+        Read exact on-chain records or execute an approved release receipt.
+        Anyone can execute an approved receipt; the contract credits the payee
+        and refuses blocked reviews, repeats, and over-funded payouts.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="escrow" label="Escrow ID" value={escrowId} setValue={setEscrowId} />
         <Field id="release" label="Release ID" value={releaseId} setValue={setReleaseId} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field id="payee" label="Payee wallet" value={payeeWallet} setValue={setPayeeWallet} />
+          <Field id="currency" label="Currency" value={currency} setValue={setCurrency} />
+        </div>
         <Field id="address" label="Studio contract address" value={address} setValue={setAddress} />
         <div className="flex flex-wrap gap-3">
           <button className="action-button" onClick={() => connectWallet().then(() => setMessage("Wallet connected.")).catch((error) => setMessage(error.message))}>Connect wallet</button>
           <button className="action-button" disabled={busy || !escrowId} onClick={() => read("escrow")}>Read escrow</button>
           <button className="action-button" disabled={busy || !releaseId} onClick={() => read("release")}>Read release</button>
           <button className="action-button" disabled={busy || !releaseId} onClick={() => read("execution")}>Read execution</button>
+          <button className="action-button" disabled={busy || !payeeWallet || !currency} onClick={() => read("payee claim")}>Read payee claim</button>
           <button className="action-button primary" disabled={busy || !escrowId || !releaseId} onClick={execute}>Execute approved release</button>
         </div>
         <p className="text-sm text-[#596452]">{message}</p>
