@@ -12,8 +12,10 @@ declare global {
 export default function EscrowPage() {
   const [projectTitle, setProjectTitle] = useState("Agent bounty milestone");
   const [payeeWallet, setPayeeWallet] = useState("0x0000000000000000000000000000000000000001");
+  const [settlementExecutor, setSettlementExecutor] = useState("0x0000000000000000000000000000000000000001");
   const [currency, setCurrency] = useState("GEN");
   const [totalBudget, setTotalBudget] = useState("1000");
+  const [feeBudget, setFeeBudget] = useState("30");
   const [termsUrl, setTermsUrl] = useState("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/milestone-terms.md");
   const [repoUrl, setRepoUrl] = useState("https://github.com/klopp78/escrowguard-genlayer");
   const [policyUrl, setPolicyUrl] = useState("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/acceptance-policy.md");
@@ -41,8 +43,10 @@ export default function EscrowPage() {
         walletAddress: account,
         projectTitle,
         payeeWallet,
+        settlementExecutor,
         currency,
         totalBudget,
+        feeBudget,
         milestoneTermsUrl: termsUrl,
         repositoryUrl: repoUrl,
         acceptancePolicyUrl: policyUrl,
@@ -62,15 +66,17 @@ export default function EscrowPage() {
       <a className="pill" href="/">EscrowGuard</a>
       <h1 className="mt-7 text-4xl font-semibold">Create escrow baseline</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
-        Register the funded budget boundary and source commitments before any
-        milestone release can be reviewed.
+        Register funded and fee boundaries, a named settlement executor, and
+        source commitments before any milestone release can be reviewed.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="title" label="Project title" value={projectTitle} setValue={setProjectTitle} />
         <Field id="payee" label="Payee wallet" value={payeeWallet} setValue={setPayeeWallet} />
+        <Field id="executor" label="Settlement executor wallet" value={settlementExecutor} setValue={setSettlementExecutor} />
         <div className="grid gap-4 md:grid-cols-2">
           <Field id="currency" label="Currency label" value={currency} setValue={setCurrency} />
           <Field id="budget" label="Deposited budget" value={totalBudget} setValue={setTotalBudget} />
+          <Field id="fees" label="Fee reserve" value={feeBudget} setValue={setFeeBudget} />
         </div>
         <Field id="terms" label="Milestone terms URL" value={termsUrl} setValue={setTermsUrl} />
         <Field id="repo" label="Work repository URL" value={repoUrl} setValue={setRepoUrl} />

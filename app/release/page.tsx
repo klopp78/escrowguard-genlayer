@@ -13,6 +13,7 @@ export default function ReleasePage() {
   const [escrowId, setEscrowId] = useState("esc_");
   const [milestoneKey, setMilestoneKey] = useState("milestone-1");
   const [amount, setAmount] = useState("250");
+  const [maxFee, setMaxFee] = useState("10");
   const [deliverableUrl, setDeliverableUrl] = useState("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/deliverable.md");
   const [evidenceUrl, setEvidenceUrl] = useState("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/evidence-pack.md");
   const [testReportUrl, setTestReportUrl] = useState("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/test-report.md");
@@ -41,6 +42,7 @@ export default function ReleasePage() {
         escrowId,
         milestoneKey,
         requestedAmount: amount,
+        maxFee,
         deliverableUrl,
         evidenceUrl,
         testReportUrl,
@@ -61,14 +63,15 @@ export default function ReleasePage() {
       <h1 className="mt-7 text-4xl font-semibold">Review milestone release</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
         A payer or payee can submit deliverable evidence and test results. The
-        contract stores an approved or blocked release receipt tied to fetched
-        source hashes and the original terms.
+        contract binds a fee cap, executor, and greybox-screened source hashes
+        to an approved or blocked release receipt.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="escrow" label="Escrow ID" value={escrowId} setValue={setEscrowId} />
         <div className="grid gap-4 md:grid-cols-2">
           <Field id="milestone" label="Milestone key" value={milestoneKey} setValue={setMilestoneKey} />
           <Field id="amount" label="Requested amount" value={amount} setValue={setAmount} />
+          <Field id="fee" label="Maximum settlement fee" value={maxFee} setValue={setMaxFee} />
         </div>
         <Field id="deliverable" label="Deliverable URL" value={deliverableUrl} setValue={setDeliverableUrl} />
         <Field id="evidence" label="Evidence pack URL" value={evidenceUrl} setValue={setEvidenceUrl} />

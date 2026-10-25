@@ -17,8 +17,10 @@ export type EscrowInput = {
   walletAddress: WalletAddress;
   projectTitle: string;
   payeeWallet: string;
+  settlementExecutor: string;
   currency: string;
   totalBudget: string;
+  feeBudget: string;
   milestoneTermsUrl: string;
   repositoryUrl: string;
   acceptancePolicyUrl: string;
@@ -30,6 +32,7 @@ export type ReleaseInput = {
   escrowId: string;
   milestoneKey: string;
   requestedAmount: string;
+  maxFee: string;
   deliverableUrl: string;
   evidenceUrl: string;
   testReportUrl: string;
@@ -95,8 +98,10 @@ export async function createEscrow({
   walletAddress,
   projectTitle,
   payeeWallet,
+  settlementExecutor,
   currency,
   totalBudget,
+  feeBudget,
   milestoneTermsUrl,
   repositoryUrl,
   acceptancePolicyUrl,
@@ -113,6 +118,8 @@ export async function createEscrow({
       payeeWallet,
       currency,
       totalBudget,
+      feeBudget,
+      settlementExecutor,
       milestoneTermsUrl,
       repositoryUrl,
       acceptancePolicyUrl,
@@ -127,6 +134,7 @@ export async function createEscrow({
   });
   const escrowId = idFromReceipt(receipt, /esc_[a-f0-9]{20}/, "escrow");
   const escrow = await readEscrow(escrowId, { walletAddress, contractAddress: address });
+  assertRecord(escrow, "escrow_id", escrowId, "escrow");
   return { hash, receipt, escrowId, escrow };
 }
 
@@ -135,6 +143,7 @@ export async function requestRelease({
   escrowId,
   milestoneKey,
   requestedAmount,
+  maxFee,
   deliverableUrl,
   evidenceUrl,
   testReportUrl,
@@ -146,7 +155,7 @@ export async function requestRelease({
   const hash = await client.writeContract({
     address,
     functionName: "request_release",
-    args: [escrowId, milestoneKey, requestedAmount, deliverableUrl, evidenceUrl, testReportUrl],
+    args: [escrowId, milestoneKey, requestedAmount, maxFee, deliverableUrl, evidenceUrl, testReportUrl],
     value: BigInt(0),
     leaderOnly: false,
   });
@@ -157,6 +166,7 @@ export async function requestRelease({
   });
   const releaseId = idFromReceipt(receipt, /pay_[a-f0-9]{20}/, "release");
   const release = await readRelease(releaseId, { walletAddress, contractAddress: address });
+  assertRecord(release, "release_id", releaseId, "release");
   return { hash, receipt, releaseId, release };
 }
 
@@ -182,6 +192,7 @@ export async function executeRelease(
     fullTransaction: true,
   });
   const execution = await readExecution(releaseId, { walletAddress, contractAddress: address });
+  assertRecord(execution, "release_id", releaseId, "execution");
   return { hash, receipt, execution };
 }
 
@@ -199,4 +210,11 @@ function collectStrings(value: unknown): string[] {
   if (typeof value === "string") return [value];
   if (!value || typeof value !== "object") return [];
   return Object.values(value as Record<string, unknown>).flatMap(collectStrings);
+}
+
+function assertRecord(value: unknown, key: string, expected: string, label: string) {
+  const record = typeof value === "string" ? JSON.parse(value) : value;
+  if (!record || typeof record !== "object" || (record as Record<string, unknown>)[key] !== expected) {
+    throw new Error(`Accepted transaction did not produce finalized ${label} state.`);
+  }
 }

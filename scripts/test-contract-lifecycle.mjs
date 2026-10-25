@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 const PAYER = "0x1111111111111111111111111111111111111111";
 const PAYEE = "0x2222222222222222222222222222222222222222";
 const THIRD_PARTY = "0x3333333333333333333333333333333333333333";
+const EXECUTOR = "0x4444444444444444444444444444444444444444";
 
 function sha256(value) {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -125,8 +126,12 @@ class EscrowGuardModel {
       project_title: "Agent bounty milestone",
       payer: PAYER,
       payee: PAYEE,
+      settlement_executor: EXECUTOR,
       currency: "GEN",
       total_budget: 1000,
+      fee_budget: 60,
+      fee_remaining: 60,
+      fee_spent: 0,
       funded_value: 1000,
       deposited_value: 1000,
       remaining_budget: 1000,
@@ -138,13 +143,14 @@ class EscrowGuardModel {
     return escrowId;
   }
 
-  requestRelease(escrowId, amount, testReport, sender) {
+  requestRelease(escrowId, amount, maxFee, testReport, sender) {
     this.sender = sender;
     const escrow = this.escrows.get(escrowId);
     if (!escrow) throw new Error("escrow_not_found");
     if (![escrow.payer, escrow.payee].includes(sender)) throw new Error("only_payer_or_payee_can_request_release_review");
     if (amount > escrow.remaining_budget) throw new Error("requested_amount_exceeds_remaining_budget");
     if (amount > escrow.deposited_value - escrow.released_value) throw new Error("requested_amount_exceeds_funded_balance");
+    if (maxFee < 0 || maxFee > escrow.fee_remaining) throw new Error("fee_cap_exceeds_remaining_fee_budget");
 
     const releaseSources = [
       source("https://github.com/klopp78/escrowguard-genlayer/blob/main/examples/deliverable.md", "deliverable", 1),
@@ -160,15 +166,17 @@ class EscrowGuardModel {
       acceptance_policy: escrow.baseline.review_materials.acceptance_policy,
       release_snapshot_commitments: snapshotCommitments,
     }));
-    const approved = !renderedText(releaseSources[2].canonical_url).includes("failing");
-    const releaseId = `pay_${sha256(`${escrowId}|milestone-1|${amount}|${evidenceBundleHash}`).slice(0, 20)}`;
+    const containsUnsafeInstruction = releaseSources.some((item) => renderedText(item.canonical_url).toLowerCase().includes("ignore previous instructions"));
+    const approved = !renderedText(releaseSources[2].canonical_url).includes("failing") && !containsUnsafeInstruction;
+    const releaseId = `pay_${sha256(`${escrowId}|milestone-1|${amount}|${maxFee}|${evidenceBundleHash}`).slice(0, 20)}`;
     const record = {
-      schema_version: "escrowguard.release.v2",
+      schema_version: "escrowguard.release.v3.fee-aware-greybox",
       release_id: releaseId,
       escrow_id: escrowId,
       requester: sender,
       milestone_key: "milestone-1",
       requested_amount: amount,
+      max_fee: maxFee,
       authorized_amount: approved ? amount : 0,
       state: approved ? "approved" : "blocked",
       baseline_hash: escrow.baseline.baseline_hash,
@@ -181,6 +189,9 @@ class EscrowGuardModel {
         budget_ok: true,
       },
       execution_ready: approved,
+      settlement_executor: escrow.settlement_executor,
+      evidence_safe: !containsUnsafeInstruction,
+      release_intent_hash: sha256(canonicalJson({ escrow_id: escrowId, payer: escrow.payer, payee: escrow.payee, settlement_executor: escrow.settlement_executor, amount, maxFee, evidenceBundleHash })),
     };
     this.releases.set(releaseId, record);
     escrow.release_ids.push(releaseId);
@@ -193,13 +204,17 @@ class EscrowGuardModel {
     if (!escrow) throw new Error("escrow_not_found");
     if (!release) throw new Error("release_not_found");
     if (release.state !== "approved" || release.execution_ready !== true) throw new Error("release_requires_approving_receipt");
+    if (sender !== escrow.settlement_executor) throw new Error("only_bound_settlement_executor_can_execute");
     if (this.executions.has(releaseId)) throw new Error("release_already_executed");
     const amount = release.authorized_amount;
     if (amount <= 0 || amount > escrow.remaining_budget) throw new Error("execution_exceeds_spending_boundary");
     if (amount > escrow.deposited_value - escrow.released_value) throw new Error("execution_exceeds_funded_balance");
+    if (release.max_fee > escrow.fee_remaining) throw new Error("execution_exceeds_fee_boundary");
 
     escrow.remaining_budget -= amount;
     escrow.released_value += amount;
+    escrow.fee_remaining -= release.max_fee;
+    escrow.fee_spent += release.max_fee;
     release.state = "executed";
     release.execution_ready = false;
     const claimKey = `${escrow.payee}|${escrow.currency}`;
@@ -218,6 +233,7 @@ class EscrowGuardModel {
       executed_by: sender,
       payee: escrow.payee,
       executed_amount: amount,
+      fee_cap_reserved: release.max_fee,
       remaining_budget: escrow.remaining_budget,
       released_value: escrow.released_value,
       payee_claimable_amount: claim.claimable_amount,
@@ -239,30 +255,34 @@ assert.equal(escrow.deposited_value, 1000);
 assert.ok(escrow.baseline.review_materials.milestone_terms.snapshot_hash);
 assert.ok(escrow.baseline.review_materials.acceptance_policy.snapshot_hash);
 
-expectError(() => model.requestRelease(escrowId, 250, "test-report.md", THIRD_PARTY), "only_payer_or_payee_can_request_release_review");
-expectError(() => model.requestRelease(escrowId, 1001, "test-report.md", PAYEE), "requested_amount_exceeds_remaining_budget");
+expectError(() => model.requestRelease(escrowId, 250, 10, "test-report.md", THIRD_PARTY), "only_payer_or_payee_can_request_release_review");
+expectError(() => model.requestRelease(escrowId, 1001, 10, "test-report.md", PAYEE), "requested_amount_exceeds_remaining_budget");
+expectError(() => model.requestRelease(escrowId, 250, 61, "test-report.md", PAYEE), "fee_cap_exceeds_remaining_fee_budget");
 
-const rejectedRelease = model.requestRelease(escrowId, 100, "failing-test-report.md", PAYEE);
+const rejectedRelease = model.requestRelease(escrowId, 100, 10, "failing-test-report.md", PAYEE);
 assert.equal(model.releases.get(rejectedRelease).state, "blocked");
 expectError(() => model.executeRelease(escrowId, rejectedRelease, THIRD_PARTY), "release_requires_approving_receipt");
 
-const approvedRelease = model.requestRelease(escrowId, 250, "test-report.md", PAYEE);
+const approvedRelease = model.requestRelease(escrowId, 250, 20, "test-report.md", PAYEE);
 const approved = model.releases.get(approvedRelease);
 assert.equal(approved.requester, PAYEE);
 assert.equal(approved.state, "approved");
 assert.equal(approved.adjudication_context_hash.length, 64);
 
-model.executeRelease(escrowId, approvedRelease, THIRD_PARTY);
+expectError(() => model.executeRelease(escrowId, approvedRelease, THIRD_PARTY), "only_bound_settlement_executor_can_execute");
+model.executeRelease(escrowId, approvedRelease, EXECUTOR);
 const execution = model.executions.get(approvedRelease);
-assert.equal(execution.executed_by, THIRD_PARTY);
+assert.equal(execution.executed_by, EXECUTOR);
 assert.equal(execution.executed_amount, 250);
 assert.equal(execution.remaining_budget, 750);
 assert.equal(execution.transfer_mechanism, "contract_state_credit_to_payee");
+assert.equal(execution.fee_cap_reserved, 20);
+assert.equal(model.escrows.get(escrowId).fee_remaining, 40);
 const claim = model.claims.get(`${PAYEE}|GEN`);
 assert.equal(claim.claimable_amount, 250);
 assert.deepEqual(claim.release_ids, [approvedRelease]);
 
-expectError(() => model.executeRelease(escrowId, approvedRelease, THIRD_PARTY), "release_requires_approving_receipt");
-expectError(() => model.requestRelease(escrowId, 751, "test-report.md", PAYEE), "requested_amount_exceeds_remaining_budget");
+expectError(() => model.executeRelease(escrowId, approvedRelease, EXECUTOR), "release_requires_approving_receipt");
+expectError(() => model.requestRelease(escrowId, 751, 1, "test-report.md", PAYEE), "requested_amount_exceeds_remaining_budget");
 
 console.log("EscrowGuard executable lifecycle tests passed");
