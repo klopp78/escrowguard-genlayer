@@ -70,8 +70,9 @@ export default function RecordsPage() {
       <h1 className="mt-7 text-4xl font-semibold">Inspect and execute receipts</h1>
       <p className="mt-3 max-w-2xl text-lg leading-8 text-[#596452]">
         Read exact on-chain records or execute an approved release receipt.
-        Anyone can execute an approved receipt; the contract credits the payee
-        and refuses blocked reviews, repeats, and over-funded payouts.
+        Only the settlement executor bound at escrow creation can execute an
+        approved receipt. The contract refuses blocked reviews, repeats, fee-cap
+        breaches, and over-funded payouts.
       </p>
       <section className="tool-panel mt-8 grid gap-4">
         <Field id="escrow" label="Escrow ID" value={escrowId} setValue={setEscrowId} />
